@@ -4,6 +4,25 @@ Siga a ordem abaixo. Antes de começar, tenha em mãos a **URL** e a **chave ano
 
 ---
 
+## Supabase e GitHub: entenda a diferença
+
+- **Supabase** = banco de dados na nuvem. Você **não** conecta o Supabase ao GitHub. Você só cria um projeto no Supabase, roda o SQL das tabelas e copia a **URL** e a **chave anon** para usar na aplicação.
+- **GitHub** = onde fica o código do seu projeto (o repositório).
+- **Railway** = serviço que **conecta ao GitHub**, baixa o código e coloca o site no ar. A opção “conectar ao GitHub” existe **no Railway**, não no Supabase.
+
+Resumo: **Supabase** = dados; **Railway** = hospeda o site e é quem se conecta ao **GitHub**.
+
+### O que fazer só no Supabase (sem GitHub)
+
+1. Acesse [supabase.com](https://supabase.com) e crie um **projeto** (New Project).
+2. No projeto, abra **SQL Editor** e execute todo o conteúdo do arquivo **`supabase/schema.sql`** do seu projeto (cria as tabelas).
+3. Vá em **Settings** → **API** e anote:
+   - **Project URL** (ex.: `https://xxxx.supabase.co`)
+   - **anon public** (chave longa que começa com `eyJ...`).  
+   Esses dois valores você vai colocar depois no **Railway** como variáveis de ambiente. No Supabase não existe opção “conectar GitHub”; ele só guarda os dados.
+
+---
+
 ## Parte 1: Preparar o repositório no GitHub
 
 ### Passo 1.1 – Criar o repositório no GitHub
@@ -51,15 +70,24 @@ git push origin main
 
 ## Parte 2: Configurar o Railway
 
-### Passo 2.1 – Criar conta e novo projeto
+### Passo 2.1 – Criar conta e conectar ao GitHub (é aqui que se conecta ao GitHub)
 
 1. Acesse [railway.app](https://railway.app).
-2. Clique em **“Login”** e entre com **GitHub** (recomendado para conectar o repositório).
-3. No dashboard, clique em **“New Project”**.
-4. Escolha **“Deploy from GitHub repo”**.
-5. Se for a primeira vez, autorize o Railway a acessar seus repositórios do GitHub.
-6. Selecione o repositório **rio-malhas-compras** (ou o nome que você usou).
-7. Clique em **“Deploy now”** (ou equivalente). O Railway vai criar um serviço e tentar fazer o primeiro deploy.
+2. Clique em **“Login”** (ou **“Start a New Project”**).
+3. **Entre com GitHub:** escolha **“Login with GitHub”** (ou “Continue with GitHub”). Isso é obrigatório para poder conectar um repositório depois.
+4. Autorize o Railway quando o GitHub pedir permissão (acesso aos repositórios).
+5. Depois de logado, você verá o **dashboard** do Railway (lista de projetos ou tela inicial).
+6. Clique em **“New Project”** (botão roxo/azul).
+7. Na tela de criação do projeto, procure uma destas opções:
+   - **“Deploy from GitHub repo”**, ou  
+   - **“GitHub Repo”**, ou  
+   - Um botão **“Configure GitHub”** / **“Connect GitHub”** na primeira vez.  
+   Se não aparecer “GitHub”, pode estar como **“Deploy from GitHub”** ou um ícone do GitHub.
+8. Se for a primeira vez, o Railway pode pedir para **instalar o app Railway no GitHub**: escolha sua conta ou organização e autorize (só assim o Railway vê seus repositórios).
+9. Depois de autorizar, **selecione o repositório** do projeto (ex.: `rio-malhas-compras`) na lista.
+10. Clique em **“Deploy”** ou **“Add to Project”**. O Railway vai criar um serviço e fazer o primeiro deploy.
+
+**Se ainda não aparecer opção de GitHub:** confira se você fez login com **“Login with GitHub”**. Se entrou com e-mail/senha, pode não haver opção de repo; nesse caso, desconecte e entre de novo usando **GitHub**. Se a interface tiver mudado, procure por **“New”** → **“GitHub Repo”** ou **“Deploy from GitHub”** no menu do projeto.
 
 ### Passo 2.2 – Definir Build e Start
 

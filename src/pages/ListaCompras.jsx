@@ -1,5 +1,22 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase, temSupabase } from '../lib/supabase'
+
+const STORAGE_KEY = 'rio-malhas-lista'
+
+function carregarDoStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+function salvarNoStorage(itens) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(itens))
+  } catch (_) {}
+}
 
 export default function ListaCompras() {
   const [itens, setItens] = useState([])
@@ -12,15 +29,20 @@ export default function ListaCompras() {
   async function carregarItens() {
     setCarregando(true)
     setErro(null)
-    const { data, error } = await supabase
-      .from('lista_compras')
-      .select('*')
-      .order('criado_em', { ascending: false })
-    if (error) {
-      setErro(error.message)
-      setItens([])
+    if (temSupabase()) {
+      const { data, error } = await supabase
+        .from('lista_compras')
+        .select('*')
+        .order('criado_em', { ascending: false })
+      if (error) {
+        setErro(error.message)
+        setItens([])
+      } else {
+        setItens(data || [])
+      }
     } else {
-      setItens(data || [])
+      const local = carregarDoStorage()
+      setItens(local)
     }
     setCarregando(false)
   }
@@ -34,34 +56,58 @@ export default function ListaCompras() {
     const nome = novoNome.trim()
     if (!nome) return
     setErro(null)
-    const { error } = await supabase.from('lista_compras').insert({ nome, comprado: false })
-    if (error) {
-      setErro(error.message)
-      return
+    if (temSupabase()) {
+      const { error } = await supabase.from('lista_compras').insert({ nome, comprado: false })
+      if (error) {
+        setErro(error.message)
+        return
+      }
+      setNovoNome('')
+      carregarItens()
+    } else {
+      const novo = {
+        id: crypto.randomUUID?.() ?? `local-${Date.now()}`,
+        nome,
+        comprado: false,
+        criado_em: new Date().toISOString(),
+        atualizado_em: new Date().toISOString(),
+      }
+      const lista = [novo, ...carregarDoStorage()]
+      salvarNoStorage(lista)
+      setItens(lista)
+      setNovoNome('')
     }
-    setNovoNome('')
-    carregarItens()
   }
 
   async function toggleComprado(item) {
     const novoComprado = !item.comprado
     setErro(null)
-    const { error: updateError } = await supabase
-      .from('lista_compras')
-      .update({ comprado: novoComprado, atualizado_em: new Date().toISOString() })
-      .eq('id', item.id)
-    if (updateError) {
-      setErro(updateError.message)
-      return
+    if (temSupabase()) {
+      const { error: updateError } = await supabase
+        .from('lista_compras')
+        .update({ comprado: novoComprado, atualizado_em: new Date().toISOString() })
+        .eq('id', item.id)
+      if (updateError) {
+        setErro(updateError.message)
+        return
+      }
+      if (novoComprado) {
+        await supabase.from('estatisticas_vendas').insert({
+          nome_item: item.nome,
+          data_hora_compra: new Date().toISOString(),
+          lista_compras_id: item.id,
+        })
+      }
+      carregarItens()
+    } else {
+      const lista = carregarDoStorage().map((i) =>
+        i.id === item.id
+          ? { ...i, comprado: novoComprado, atualizado_em: new Date().toISOString() }
+          : i
+      )
+      salvarNoStorage(lista)
+      setItens(lista)
     }
-    if (novoComprado) {
-      await supabase.from('estatisticas_vendas').insert({
-        nome_item: item.nome,
-        data_hora_compra: new Date().toISOString(),
-        lista_compras_id: item.id,
-      })
-    }
-    carregarItens()
   }
 
   async function salvarEdicao() {
@@ -69,17 +115,29 @@ export default function ListaCompras() {
     const nome = editandoNome.trim()
     if (!nome) return
     setErro(null)
-    const { error } = await supabase
-      .from('lista_compras')
-      .update({ nome, atualizado_em: new Date().toISOString() })
-      .eq('id', editandoId)
-    if (error) {
-      setErro(error.message)
-      return
+    if (temSupabase()) {
+      const { error } = await supabase
+        .from('lista_compras')
+        .update({ nome, atualizado_em: new Date().toISOString() })
+        .eq('id', editandoId)
+      if (error) {
+        setErro(error.message)
+        return
+      }
+      setEditandoId(null)
+      setEditandoNome('')
+      carregarItens()
+    } else {
+      const lista = carregarDoStorage().map((i) =>
+        i.id === editandoId
+          ? { ...i, nome, atualizado_em: new Date().toISOString() }
+          : i
+      )
+      salvarNoStorage(lista)
+      setItens(lista)
+      setEditandoId(null)
+      setEditandoNome('')
     }
-    setEditandoId(null)
-    setEditandoNome('')
-    carregarItens()
   }
 
   function iniciarEdicao(item) {
@@ -94,12 +152,18 @@ export default function ListaCompras() {
 
   async function remover(id) {
     setErro(null)
-    const { error } = await supabase.from('lista_compras').delete().eq('id', id)
-    if (error) {
-      setErro(error.message)
-      return
+    if (temSupabase()) {
+      const { error } = await supabase.from('lista_compras').delete().eq('id', id)
+      if (error) {
+        setErro(error.message)
+        return
+      }
+      carregarItens()
+    } else {
+      const lista = carregarDoStorage().filter((i) => i.id !== id)
+      salvarNoStorage(lista)
+      setItens(lista)
     }
-    carregarItens()
   }
 
   return (
@@ -113,7 +177,14 @@ export default function ListaCompras() {
           />
           <div>
             <h1 className="text-xl md:text-2xl font-bold leading-tight">Rio Malhas Tecidos</h1>
-            <p className="text-white/80 text-sm">Lista de Compras</p>
+            <p className="text-white/80 text-sm">
+              Lista de Compras
+              {!temSupabase() && (
+                <span className="block text-white/60 text-xs mt-0.5">
+                  Dados salvos no navegador. Configure o Supabase no Railway para sincronizar.
+                </span>
+              )}
+            </p>
           </div>
         </div>
       </header>
