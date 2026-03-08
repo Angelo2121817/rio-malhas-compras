@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase, temSupabase } from '../lib/supabase'
+import Logo from '../components/Logo'
 
 const STORAGE_KEY = 'rio-malhas-lista'
 
@@ -18,11 +19,25 @@ function salvarNoStorage(itens) {
   } catch (_) {}
 }
 
+function parseMetragem(val) {
+  if (val === '' || val == null) return null
+  const n = Number(String(val).replace(',', '.'))
+  return Number.isFinite(n) && n >= 0 ? n : null
+}
+
+function formatMetragem(m) {
+  if (m == null || m === '') return ''
+  const n = Number(m)
+  return Number.isFinite(n) ? `${n} m` : ''
+}
+
 export default function ListaCompras() {
   const [itens, setItens] = useState([])
   const [novoNome, setNovoNome] = useState('')
+  const [novoMetragem, setNovoMetragem] = useState('')
   const [editandoId, setEditandoId] = useState(null)
   const [editandoNome, setEditandoNome] = useState('')
+  const [editandoMetragem, setEditandoMetragem] = useState('')
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState(null)
 
@@ -55,19 +70,24 @@ export default function ListaCompras() {
     e.preventDefault()
     const nome = novoNome.trim()
     if (!nome) return
+    const metragem = parseMetragem(novoMetragem)
     setErro(null)
     if (temSupabase()) {
-      const { error } = await supabase.from('lista_compras').insert({ nome, comprado: false })
+      const { error } = await supabase
+        .from('lista_compras')
+        .insert({ nome, metragem, comprado: false })
       if (error) {
         setErro(error.message)
         return
       }
       setNovoNome('')
+      setNovoMetragem('')
       carregarItens()
     } else {
       const novo = {
         id: crypto.randomUUID?.() ?? `local-${Date.now()}`,
         nome,
+        metragem,
         comprado: false,
         criado_em: new Date().toISOString(),
         atualizado_em: new Date().toISOString(),
@@ -76,6 +96,7 @@ export default function ListaCompras() {
       salvarNoStorage(lista)
       setItens(lista)
       setNovoNome('')
+      setNovoMetragem('')
     }
   }
 
@@ -94,6 +115,7 @@ export default function ListaCompras() {
       if (novoComprado) {
         await supabase.from('estatisticas_vendas').insert({
           nome_item: item.nome,
+          metragem_comprada: item.metragem ?? null,
           data_hora_compra: new Date().toISOString(),
           lista_compras_id: item.id,
         })
@@ -114,11 +136,12 @@ export default function ListaCompras() {
     if (editandoId == null) return
     const nome = editandoNome.trim()
     if (!nome) return
+    const metragem = parseMetragem(editandoMetragem)
     setErro(null)
     if (temSupabase()) {
       const { error } = await supabase
         .from('lista_compras')
-        .update({ nome, atualizado_em: new Date().toISOString() })
+        .update({ nome, metragem, atualizado_em: new Date().toISOString() })
         .eq('id', editandoId)
       if (error) {
         setErro(error.message)
@@ -126,28 +149,32 @@ export default function ListaCompras() {
       }
       setEditandoId(null)
       setEditandoNome('')
+      setEditandoMetragem('')
       carregarItens()
     } else {
       const lista = carregarDoStorage().map((i) =>
         i.id === editandoId
-          ? { ...i, nome, atualizado_em: new Date().toISOString() }
+          ? { ...i, nome, metragem, atualizado_em: new Date().toISOString() }
           : i
       )
       salvarNoStorage(lista)
       setItens(lista)
       setEditandoId(null)
       setEditandoNome('')
+      setEditandoMetragem('')
     }
   }
 
   function iniciarEdicao(item) {
     setEditandoId(item.id)
     setEditandoNome(item.nome)
+    setEditandoMetragem(item.metragem != null ? String(item.metragem) : '')
   }
 
   function cancelarEdicao() {
     setEditandoId(null)
     setEditandoNome('')
+    setEditandoMetragem('')
   }
 
   async function remover(id) {
@@ -170,10 +197,10 @@ export default function ListaCompras() {
     <div className="min-h-screen bg-slate-50">
       <header className="bg-[#002395] text-white py-4 shadow">
         <div className="max-w-2xl mx-auto px-4 flex items-center gap-3">
-          <img
-            src="/rio-malhas-tecidos-logo.png"
-            alt="Rio Malhas Tecidos"
-            className="h-10 md:h-12 w-auto object-contain object-center"
+          <Logo
+            theme="light"
+            variant="compact"
+            className="h-10 md:h-12 w-auto object-contain object-center min-w-[140px]"
           />
           <div>
             <h1 className="text-xl md:text-2xl font-bold leading-tight">Rio Malhas Tecidos</h1>
@@ -190,7 +217,7 @@ export default function ListaCompras() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-8">
-        <form onSubmit={adicionar} className="flex gap-2 mb-6">
+        <form onSubmit={adicionar} className="flex flex-col sm:flex-row gap-2 mb-6">
           <input
             type="text"
             value={novoNome}
@@ -198,9 +225,17 @@ export default function ListaCompras() {
             placeholder="Nome do tecido..."
             className="flex-1 rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#002395] focus:border-transparent"
           />
+          <input
+            type="text"
+            inputMode="decimal"
+            value={novoMetragem}
+            onChange={(e) => setNovoMetragem(e.target.value)}
+            placeholder="Metragem (m)"
+            className="w-full sm:w-28 rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#002395] focus:border-transparent"
+          />
           <button
             type="submit"
-            className="rounded-lg bg-[#002395] text-white px-4 py-2 font-medium hover:bg-[#001a6e] transition"
+            className="rounded-lg bg-[#002395] text-white px-4 py-2 font-medium hover:bg-[#001a6e] transition whitespace-nowrap"
           >
             Adicionar
           </button>
@@ -235,8 +270,17 @@ export default function ListaCompras() {
                       type="text"
                       value={editandoNome}
                       onChange={(e) => setEditandoNome(e.target.value)}
-                      className="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#002395]"
+                      placeholder="Nome"
+                      className="flex-1 min-w-0 rounded border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#002395]"
                       autoFocus
+                    />
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={editandoMetragem}
+                      onChange={(e) => setEditandoMetragem(e.target.value)}
+                      placeholder="m"
+                      className="w-20 rounded border border-slate-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#002395]"
                     />
                     <button
                       type="button"
@@ -256,11 +300,16 @@ export default function ListaCompras() {
                 ) : (
                   <>
                     <span
-                      className={`flex-1 ${
+                      className={`flex-1 min-w-0 ${
                         item.comprado ? 'line-through text-slate-500' : 'text-slate-800'
                       }`}
                     >
                       {item.nome}
+                      {item.metragem != null && item.metragem !== '' && (
+                        <span className="text-slate-500 font-medium ml-1.5">
+                          {formatMetragem(item.metragem)}
+                        </span>
+                      )}
                     </span>
                     <button
                       type="button"

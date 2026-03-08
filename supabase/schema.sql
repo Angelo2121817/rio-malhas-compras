@@ -5,6 +5,7 @@
 CREATE TABLE IF NOT EXISTS lista_compras (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nome TEXT NOT NULL,
+  metragem NUMERIC(10, 2),  -- metros a comprar (opcional)
   comprado BOOLEAN NOT NULL DEFAULT FALSE,
   criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -14,6 +15,7 @@ CREATE TABLE IF NOT EXISTS lista_compras (
 CREATE TABLE IF NOT EXISTS estatisticas_vendas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nome_item TEXT NOT NULL,
+  metragem_comprada NUMERIC(10, 2),
   data_hora_compra TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   lista_compras_id UUID REFERENCES lista_compras(id) ON DELETE SET NULL
 );
@@ -39,3 +41,7 @@ CREATE POLICY "Permitir tudo em estatisticas_vendas para anon"
   ON estatisticas_vendas FOR ALL
   USING (true)
   WITH CHECK (true);
+
+-- Se as tabelas já existiam sem metragem, rode no SQL Editor:
+-- ALTER TABLE lista_compras ADD COLUMN IF NOT EXISTS metragem NUMERIC(10, 2);
+-- ALTER TABLE estatisticas_vendas ADD COLUMN IF NOT EXISTS metragem_comprada NUMERIC(10, 2);
