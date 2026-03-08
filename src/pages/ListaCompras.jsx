@@ -194,20 +194,21 @@ export default function ListaCompras() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-[#002395] text-white py-4 shadow">
-        <div className="max-w-2xl mx-auto px-4 flex items-center gap-3">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      <header className="bg-gradient-to-r from-[#002395] to-[#001a6e] text-white shadow-lg">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.08),transparent)]" aria-hidden />
+        <div className="relative max-w-2xl mx-auto px-4 py-5 md:py-6 flex items-center gap-4">
           <Logo
             theme="light"
             variant="compact"
-            className="h-14 md:h-20 w-auto object-contain object-center min-w-[180px]"
+            className="h-14 md:h-20 w-auto object-contain object-center min-w-[180px] drop-shadow-sm"
           />
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold leading-tight">Rio Malhas Tecidos</h1>
-            <p className="text-white/80 text-sm">
+          <div className="min-w-0">
+            <h1 className="text-xl md:text-2xl font-bold leading-tight tracking-tight">Rio Malhas Tecidos</h1>
+            <p className="text-white/90 text-sm font-medium mt-0.5">
               Lista de Compras
               {!temSupabase() && (
-                <span className="block text-white/60 text-xs mt-0.5">
+                <span className="block text-white/70 text-xs font-normal mt-1">
                   Dados salvos no navegador. Configure o Supabase no Railway para sincronizar.
                 </span>
               )}
@@ -216,62 +217,75 @@ export default function ListaCompras() {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-8">
-        <form onSubmit={adicionar} className="flex flex-col sm:flex-row gap-2 mb-6">
-          <input
-            type="text"
-            value={novoNome}
-            onChange={(e) => setNovoNome(e.target.value)}
-            placeholder="Nome do tecido..."
-            className="flex-1 rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#002395] focus:border-transparent"
-          />
-          <input
-            type="text"
-            inputMode="decimal"
-            value={novoMetragem}
-            onChange={(e) => setNovoMetragem(e.target.value)}
-            placeholder="Metragem (m)"
-            className="w-full sm:w-28 rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#002395] focus:border-transparent"
-          />
-          <button
-            type="submit"
-            className="rounded-lg bg-[#002395] text-white px-4 py-2 font-medium hover:bg-[#001a6e] transition whitespace-nowrap"
-          >
-            Adicionar
-          </button>
-        </form>
+      <main className="max-w-2xl mx-auto px-4 py-8 md:py-10">
+        <section className="bg-white rounded-2xl shadow-md shadow-slate-200/80 border border-slate-100 p-5 md:p-6 mb-8">
+          <h2 className="text-slate-800 font-semibold text-sm uppercase tracking-wider mb-4">Novo item</h2>
+          <form onSubmit={adicionar} className="flex flex-col sm:flex-row gap-3">
+            <input
+              type="text"
+              value={novoNome}
+              onChange={(e) => setNovoNome(e.target.value)}
+              placeholder="Nome do tecido..."
+              className="flex-1 rounded-xl border border-slate-200 px-4 py-3 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#002395]/40 focus:border-[#002395]"
+            />
+            <input
+              type="text"
+              inputMode="decimal"
+              value={novoMetragem}
+              onChange={(e) => setNovoMetragem(e.target.value)}
+              placeholder="Metragem (m)"
+              className="w-full sm:w-28 rounded-xl border border-slate-200 px-4 py-3 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#002395]/40 focus:border-[#002395]"
+            />
+            <button
+              type="submit"
+              className="rounded-xl bg-[#002395] text-white px-5 py-3 font-semibold hover:bg-[#001a6e] active:scale-[0.98] shadow-md shadow-[#002395]/25 hover:shadow-lg hover:shadow-[#002395]/30 transition-all whitespace-nowrap"
+            >
+              Adicionar
+            </button>
+          </form>
+        </section>
 
         {erro && (
-          <div className="mb-4 p-3 rounded-lg bg-red-100 text-red-800 text-sm">
+          <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-100 text-red-800 text-sm font-medium">
             {erro}
           </div>
         )}
 
         {carregando ? (
-          <p className="text-slate-500">Carregando...</p>
+          <div className="flex items-center gap-2 text-slate-500">
+            <span className="h-2 w-2 rounded-full bg-[#002395]/50 animate-pulse" />
+            <span className="text-sm font-medium">Carregando...</span>
+          </div>
         ) : itens.length === 0 ? (
-          <p className="text-slate-500">Nenhum item na lista. Adicione um tecido acima.</p>
+          <div className="bg-white rounded-2xl border border-slate-100 border-dashed p-10 text-center">
+            <p className="text-slate-500 font-medium">Nenhum item na lista.</p>
+            <p className="text-slate-400 text-sm mt-1">Adicione um tecido no formulário acima.</p>
+          </div>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {itens.map((item) => (
               <li
                 key={item.id}
-                className="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 shadow-sm"
+                className={`flex items-center gap-3 p-4 bg-white rounded-2xl border shadow-sm transition-all hover:shadow-md hover:border-slate-200 ${
+                  item.comprado ? 'border-slate-100 opacity-90' : 'border-slate-100'
+                }`}
               >
-                <input
-                  type="checkbox"
-                  checked={!!item.comprado}
-                  onChange={() => toggleComprado(item)}
-                  className="w-5 h-5 rounded border-slate-300 text-[#002395] focus:ring-[#002395]"
-                />
+                <label className="flex items-center shrink-0 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={!!item.comprado}
+                    onChange={() => toggleComprado(item)}
+                    className="w-5 h-5 rounded-md border-2 border-slate-300 text-[#002395] focus:ring-2 focus:ring-[#002395]/40 focus:ring-offset-0"
+                  />
+                </label>
                 {editandoId === item.id ? (
-                  <>
+                  <div className="flex-1 flex flex-wrap items-center gap-2 min-w-0">
                     <input
                       type="text"
                       value={editandoNome}
                       onChange={(e) => setEditandoNome(e.target.value)}
                       placeholder="Nome"
-                      className="flex-1 min-w-0 rounded border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#002395]"
+                      className="flex-1 min-w-[120px] rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#002395]/40 focus:border-[#002395]"
                       autoFocus
                     />
                     <input
@@ -280,51 +294,57 @@ export default function ListaCompras() {
                       value={editandoMetragem}
                       onChange={(e) => setEditandoMetragem(e.target.value)}
                       placeholder="m"
-                      className="w-20 rounded border border-slate-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#002395]"
+                      className="w-20 rounded-xl border border-slate-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#002395]/40 focus:border-[#002395]"
                     />
-                    <button
-                      type="button"
-                      onClick={salvarEdicao}
-                      className="text-sm text-[#002395] font-medium hover:underline"
-                    >
-                      Salvar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={cancelarEdicao}
-                      className="text-sm text-slate-500 hover:underline"
-                    >
-                      Cancelar
-                    </button>
-                  </>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={salvarEdicao}
+                        className="rounded-lg bg-[#002395] text-white px-3 py-2 text-sm font-semibold hover:bg-[#001a6e] transition-colors"
+                      >
+                        Salvar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelarEdicao}
+                        className="rounded-lg border border-slate-200 text-slate-600 px-3 py-2 text-sm font-medium hover:bg-slate-50 transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
                 ) : (
                   <>
-                    <span
-                      className={`flex-1 min-w-0 ${
-                        item.comprado ? 'line-through text-slate-500' : 'text-slate-800'
-                      }`}
-                    >
-                      {item.nome}
+                    <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
+                      <span
+                        className={`font-medium ${
+                          item.comprado ? 'line-through text-slate-400' : 'text-slate-800'
+                        }`}
+                      >
+                        {item.nome}
+                      </span>
                       {item.metragem != null && item.metragem !== '' && (
-                        <span className="text-slate-500 font-medium ml-1.5">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-[#002395]/10 text-[#002395]">
                           {formatMetragem(item.metragem)}
                         </span>
                       )}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => iniciarEdicao(item)}
-                      className="text-sm text-[#002395] hover:underline"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => remover(item.id)}
-                      className="text-sm text-red-600 hover:underline"
-                    >
-                      Remover
-                    </button>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => iniciarEdicao(item)}
+                        className="rounded-lg px-3 py-2 text-sm font-medium text-[#002395] hover:bg-[#002395]/10 transition-colors"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => remover(item.id)}
+                        className="rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        Remover
+                      </button>
+                    </div>
                   </>
                 )}
               </li>
