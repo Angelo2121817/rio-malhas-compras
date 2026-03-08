@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS lista_compras (
   nome TEXT NOT NULL,
   metragem NUMERIC(10, 2),  -- metros a comprar (opcional)
   comprado BOOLEAN NOT NULL DEFAULT FALSE,
+  comprado_em TIMESTAMPTZ,  -- data/hora em que foi marcado como comprado (para estatísticas)
   criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -42,6 +43,7 @@ CREATE POLICY "Permitir tudo em estatisticas_vendas para anon"
   USING (true)
   WITH CHECK (true);
 
--- Se as tabelas já existiam sem metragem, rode no SQL Editor:
+-- Se as tabelas já existiam, rode no SQL Editor para adicionar colunas novas:
 -- ALTER TABLE lista_compras ADD COLUMN IF NOT EXISTS metragem NUMERIC(10, 2);
+-- ALTER TABLE lista_compras ADD COLUMN IF NOT EXISTS comprado_em TIMESTAMPTZ;
 -- ALTER TABLE estatisticas_vendas ADD COLUMN IF NOT EXISTS metragem_comprada NUMERIC(10, 2);

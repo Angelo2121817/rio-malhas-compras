@@ -31,6 +31,16 @@ function formatMetragem(m) {
   return Number.isFinite(n) ? `${n} m` : ''
 }
 
+function formatarDataCompra(iso) {
+  if (!iso) return ''
+  try {
+    const d = new Date(iso)
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  } catch {
+    return ''
+  }
+}
+
 export default function ListaCompras() {
   const [itens, setItens] = useState([])
   const [novoNome, setNovoNome] = useState('')
@@ -102,11 +112,16 @@ export default function ListaCompras() {
 
   async function toggleComprado(item) {
     const novoComprado = !item.comprado
+    const agora = new Date().toISOString()
     setErro(null)
     if (temSupabase()) {
       const { error: updateError } = await supabase
         .from('lista_compras')
-        .update({ comprado: novoComprado, atualizado_em: new Date().toISOString() })
+        .update({
+          comprado: novoComprado,
+          comprado_em: novoComprado ? agora : null,
+          atualizado_em: agora,
+        })
         .eq('id', item.id)
       if (updateError) {
         setErro(updateError.message)
@@ -116,7 +131,7 @@ export default function ListaCompras() {
         await supabase.from('estatisticas_vendas').insert({
           nome_item: item.nome,
           metragem_comprada: item.metragem ?? null,
-          data_hora_compra: new Date().toISOString(),
+          data_hora_compra: agora,
           lista_compras_id: item.id,
         })
       }
@@ -124,7 +139,12 @@ export default function ListaCompras() {
     } else {
       const lista = carregarDoStorage().map((i) =>
         i.id === item.id
-          ? { ...i, comprado: novoComprado, atualizado_em: new Date().toISOString() }
+          ? {
+              ...i,
+              comprado: novoComprado,
+              comprado_em: novoComprado ? agora : null,
+              atualizado_em: agora,
+            }
           : i
       )
       salvarNoStorage(lista)
@@ -134,6 +154,10 @@ export default function ListaCompras() {
 
   const totalItens = itens.length
   const totalComprados = itens.filter((i) => i.comprado).length
+  const historicoCompras = itens
+    .filter((i) => i.comprado && (i.comprado_em || i.atualizado_em))
+    .sort((a, b) => new Date(b.comprado_em || b.atualizado_em || 0) - new Date(a.comprado_em || a.atualizado_em || 0))
+    .slice(0, 20)
 
   async function salvarEdicao() {
     if (editandoId == null) return
@@ -360,13 +384,20 @@ export default function ListaCompras() {
                       </div>
                     ) : (
                       <>
-                        <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
-                          <span className={`font-semibold text-slate-800 ${item.comprado ? 'line-through text-slate-400' : ''}`}>
-                            {item.nome}
-                          </span>
-                          {item.metragem != null && item.metragem !== '' && (
-                            <span className="inline-flex items-center px-3 py-1 rounded-xl text-xs font-bold bg-[#002395]/15 text-[#002395] border border-[#002395]/20">
-                              {formatMetragem(item.metragem)}
+                        <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`font-semibold text-slate-800 ${item.comprado ? 'line-through text-slate-400' : ''}`}>
+                              {item.nome}
+                            </span>
+                            {item.metragem != null && item.metragem !== '' && (
+                              <span className="inline-flex items-center px-3 py-1 rounded-xl text-xs font-bold bg-[#002395]/15 text-[#002395] border border-[#002395]/20">
+                                {formatMetragem(item.metragem)}
+                              </span>
+                            )}
+                          </div>
+                          {item.comprado && (item.comprado_em || item.atualizado_em) && (
+                            <span className="text-xs text-emerald-600 font-medium">
+                              Comprado em {formatarDataCompra(item.comprado_em || item.atualizado_em)}
                             </span>
                           )}
                         </div>
@@ -395,6 +426,36 @@ export default function ListaCompras() {
               ))}
             </ul>
           </div>
+        )}
+
+        {/* Histórico de compras - para orientar próximas compras */}
+        {!carregando && historicoCompras.length > 0 && (
+          <section className="mt-10">
+            <div className="flex items-center gap-2 mb-3 px-1">
+              <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-700">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+              </span>
+              <h3 className="text-slate-800 font-bold text-lg">Histórico de compras</h3>
+            </div>
+            <p className="text-slate-500 text-sm mb-4 px-1">Use para orientar suas próximas compras.</p>
+            <div className="bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden">
+              <ul className="divide-y divide-slate-100">
+                {historicoCompras.map((item) => (
+                  <li key={item.id} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-slate-50/80">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-slate-800 truncate">{item.nome}</p>
+                      {item.metragem != null && item.metragem !== '' && (
+                        <p className="text-xs text-slate-500">{formatMetragem(item.metragem)}</p>
+                      )}
+                    </div>
+                    <span className="text-sm font-semibold text-emerald-600 shrink-0">
+                      {formatarDataCompra(item.comprado_em || item.atualizado_em)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
         )}
       </main>
     </div>
