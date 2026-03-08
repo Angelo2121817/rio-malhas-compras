@@ -152,7 +152,8 @@ export default function ListaCompras() {
     }
   }
 
-  const totalItens = itens.length
+  const itensPendentes = itens.filter((i) => !i.comprado)
+  const totalPendentes = itensPendentes.length
   const totalComprados = itens.filter((i) => i.comprado).length
   const historicoCompras = itens
     .filter((i) => i.comprado && (i.comprado_em || i.atualizado_em))
@@ -202,6 +203,11 @@ export default function ListaCompras() {
     setEditandoId(null)
     setEditandoNome('')
     setEditandoMetragem('')
+  }
+
+  function tentarRemover(id, nome) {
+    if (!window.confirm(`Remover "${nome}" da lista?`)) return
+    remover(id)
   }
 
   async function remover(id) {
@@ -293,8 +299,8 @@ export default function ListaCompras() {
                 <svg className="w-6 h-6 text-[#002395]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
               </div>
               <div>
-                <p className="text-2xl font-bold text-slate-800">{totalItens}</p>
-                <p className="text-sm text-slate-500 font-medium">Total na lista</p>
+                <p className="text-2xl font-bold text-slate-800">{totalPendentes}</p>
+                <p className="text-sm text-slate-500 font-medium">Pendentes</p>
               </div>
             </div>
             <div className="flex-1 bg-white rounded-2xl shadow-md border border-slate-100 p-4 flex items-center gap-3">
@@ -324,23 +330,29 @@ export default function ListaCompras() {
             <p className="text-slate-700 font-semibold text-lg">Lista vazia</p>
             <p className="text-slate-500 text-sm mt-1">Adicione o primeiro tecido usando o formulário acima.</p>
           </div>
+        ) : totalPendentes === 0 ? (
+          <div className="bg-white rounded-2xl border-2 border-dashed border-slate-200 p-12 text-center">
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-emerald-100 flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <p className="text-slate-700 font-semibold text-lg">Nenhum item pendente</p>
+            <p className="text-slate-500 text-sm mt-1">Tudo comprado! O histórico aparece abaixo.</p>
+          </div>
         ) : (
           <div className="space-y-3">
-            <h3 className="text-slate-700 font-bold text-sm uppercase tracking-wider px-1">Sua lista</h3>
+            <h3 className="text-slate-700 font-bold text-sm uppercase tracking-wider px-1">Sua lista (pendentes)</h3>
             <ul className="space-y-3">
-              {itens.map((item) => (
+              {itensPendentes.map((item) => (
                 <li
                   key={item.id}
-                  className={`bg-white rounded-2xl border-2 shadow-md transition-all overflow-hidden ${
-                    item.comprado ? 'border-slate-100 opacity-85' : 'border-slate-100 hover:shadow-lg hover:border-[#002395]/20'
-                  }`}
+                  className="bg-white rounded-2xl border-2 border-slate-100 shadow-md transition-all overflow-hidden hover:shadow-lg hover:border-[#002395]/20"
                 >
                   <div className="flex items-center gap-4 p-4">
-                    {/* Checkbox: só o input, sem label, para evitar duplo disparo */}
-                    <div className="flex items-center justify-center shrink-0 w-10 h-10">
+                    {/* Marcar como comprado: item some da lista e vai para o histórico */}
+                    <div className="flex items-center justify-center shrink-0 w-10 h-10" title="Marcar como comprado (some da lista e vai para o histórico)">
                       <input
                         type="checkbox"
-                        checked={!!item.comprado}
+                        checked={false}
                         onChange={() => toggleComprado(item)}
                         className="w-6 h-6 rounded-lg border-2 border-slate-300 text-[#002395] focus:ring-2 focus:ring-[#002395]/40 focus:ring-offset-2 cursor-pointer"
                       />
@@ -386,7 +398,7 @@ export default function ListaCompras() {
                       <>
                         <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`font-semibold text-slate-800 ${item.comprado ? 'line-through text-slate-400' : ''}`}>
+                            <span className="font-semibold text-slate-800">
                               {item.nome}
                             </span>
                             {item.metragem != null && item.metragem !== '' && (
@@ -395,11 +407,6 @@ export default function ListaCompras() {
                               </span>
                             )}
                           </div>
-                          {item.comprado && (item.comprado_em || item.atualizado_em) && (
-                            <span className="text-xs text-emerald-600 font-medium">
-                              Comprado em {formatarDataCompra(item.comprado_em || item.atualizado_em)}
-                            </span>
-                          )}
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <button
@@ -412,7 +419,7 @@ export default function ListaCompras() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => remover(item.id)}
+                            onClick={() => tentarRemover(item.id, item.nome)}
                             className="rounded-xl p-2.5 text-red-600 hover:bg-red-50 transition-colors"
                             title="Remover"
                           >
@@ -451,6 +458,14 @@ export default function ListaCompras() {
                     <span className="text-sm font-semibold text-emerald-600 shrink-0">
                       {formatarDataCompra(item.comprado_em || item.atualizado_em)}
                     </span>
+                    <button
+                      type="button"
+                      onClick={() => tentarRemover(item.id, item.nome)}
+                      className="rounded-lg p-2 text-red-600 hover:bg-red-50 transition-colors shrink-0"
+                      title="Apagar do histórico"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
                   </li>
                 ))}
               </ul>
