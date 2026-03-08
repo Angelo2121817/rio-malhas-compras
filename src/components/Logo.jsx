@@ -14,7 +14,7 @@ export default function Logo({ className = '', variant = 'default', theme = 'dar
   if (!useFallback) {
     return (
       <img
-        src="/rio-malhas-tecidos-logo.png"
+        src="/rio_logo.png"
         alt="Rio Malhas Tecidos"
         className={className}
         onError={() => setImgErro(true)}
