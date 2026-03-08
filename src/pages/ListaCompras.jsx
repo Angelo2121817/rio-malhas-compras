@@ -200,7 +200,7 @@ export default function ListaCompras() {
           <Logo
             theme="light"
             variant="compact"
-            className="h-10 md:h-12 w-auto object-contain object-center min-w-[140px]"
+            className="h-14 md:h-20 w-auto object-contain object-center min-w-[180px]"
           />
           <div>
             <h1 className="text-xl md:text-2xl font-bold leading-tight">Rio Malhas Tecidos</h1>
